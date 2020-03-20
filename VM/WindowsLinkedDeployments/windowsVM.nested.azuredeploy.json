@@ -50,14 +50,15 @@
         },
         "_artifactsLocation": {
             "type": "string",
-            "defaultValue": "https://pimadeployments.blob.core.windows.net/vmdeployments"
+            "defaultValue": "https://raw.githubusercontent.com/arnoldna/test2/master"
         },
         "_artifactsLocationSasToken": {
-            "type": "securestring"
+            "type": "string",
+            "defaultValue":""
         }
     },
     "variables": {
-        "templateUriWindowsVm": "[concat(parameters('_artifactsLocation'), '/WindowsLinkedDeployments/WindowsLinkedTemplates/', 'windowsVM.azuredeploy.json', parameters('_artifactsLocationSasToken'))]",
+        "templateUriWindowsVm": "[concat(parameters('_artifactsLocation'), '/WindowsLinkedDeployments/WindowsLinkedTemplates/', 'windowsVM.azuredeploy.json')]",
         "central-westus-prod-hub-ad-rg": {
             "windowsVMImage":{"value":""},
             "OSVersion": {"value": "[parameters('OSVersion')]"},
