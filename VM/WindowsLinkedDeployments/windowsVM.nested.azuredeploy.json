@@ -59,7 +59,7 @@
     },
     "variables": {
         "templateUriWindowsVm": "[concat(parameters('_artifactsLocation'), '/VM/WindowsLinkedDeployments/WindowsLinkedTemplates/', 'windowsVM.azuredeploy.json')]",
-        "central-westus-prod-hub-ad-rg": {
+        "test-rg": {
             "windowsVMImage":{"value":""},
             "OSVersion": {"value": "[parameters('OSVersion')]"},
             "imagePublisher": {"value": "MicrosoftWindowsServer"},
