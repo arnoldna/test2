@@ -185,7 +185,7 @@
                 "availabilitySet": {
                     "id": "[resourceId('Microsoft.Compute/availabilitySets', concat(parameters('vmName'), '-AS'))]"
                 },
-                    "hardwareProfile": {
+                "hardwareProfile": {
                     "vmSize": "[parameters('vmSize')]"
                 },
                 "osProfile": {
