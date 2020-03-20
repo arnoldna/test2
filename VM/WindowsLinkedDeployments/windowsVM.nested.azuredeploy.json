@@ -48,7 +48,7 @@
         },
         "_artifactsLocation": {
             "type": "string",
-            "defaultValue": "https://raw.githubusercontent.com/arnoldna/ARMNestedCopy/master"
+            "defaultValue": "https://raw.githubusercontent.com/arnoldna/test2/master/VM"
         },
         "_artifactsLocationSasToken":{
             "type":"string",
@@ -56,7 +56,7 @@
         }
     },
     "variables": {
-        "templateUriWindowsVm": "[concat(parameters('_artifactsLocation'), '/WindowsLinkedDeployments/WindowsLinkedTemplates/', 'vm.deploy.json')]",
+        "templateUriWindowsVm": "[concat(parameters('_artifactsLocation'), '/WindowsLinkedDeployments/WindowsLinkedTemplates/', 'windowsVM.azuredeploy.json')]",
         "test-rg": {
             "adminUsername": {"value": "[parameters('adminUsername')]"},
             "adminPassword": {"value": "[parameters('adminPassword')]"},
