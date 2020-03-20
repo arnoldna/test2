@@ -1,0 +1,60 @@
+{
+    "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentParameters.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+        "deploymentSubscriptionName": {
+            "value": "ocio-devtest-infra"
+        },
+        "vmName": {
+            "value": "AZG-Nate-VM8"
+        },
+        "assignedDataDisks": {
+            "value": {
+                "dataDiskList": [
+                    {"lun": 0, "storageAccountType": "StandardSSD_LRS", "diskSizeGB": 1}
+                ]
+            }
+        },
+        "vmSize":{
+            "value": "Standard_D2s_v3"
+        },
+        "tags": {
+            "value": {
+                "ApplicationName":"Azure Core Resources",
+                "ContactEmail": "Infra_Apps@pima.gov",
+                "Department": "ITD",
+                "CostCenter":"12345",
+                "OwnerName":"Ken Mayer",
+                "DisasterRecovery": "No",
+                "Environment": "dev",
+                "Tier": "0"
+            }
+        },
+        "customScriptExtensionCommandToExecute": {
+            "value": "powershell -ExecutionPolicy Unrestricted -File vmWrapper.ps1"
+        },
+        "customScriptIncrement": {
+            "value": 1
+        },
+        "serverToolsFiles": {
+            "value":[
+            ]
+        },
+        "adminPassword": {
+            "reference": {
+            "keyVault": {
+                "id": "/subscriptions/1db25687-69f8-41dc-845f-2958b094e631/resourceGroups/central-westus-prod-kv/providers/Microsoft.KeyVault/vaults/pima-itd-prod-kv"
+                },
+                "secretName": "AdminPassword"
+            }
+        },
+        "_artifactsLocationSasToken": {
+            "reference": {
+            "keyVault": {
+                "id": "/subscriptions/33311ae3-c376-41a8-ad29-3599a4433e50/resourceGroups/AZG-Prod-Server-RG/providers/Microsoft.KeyVault/vaults/AZG-Vir-Prod-KV"
+                },
+                "secretName": "resourceDeploymentSAS"
+            }
+        }
+    }
+}

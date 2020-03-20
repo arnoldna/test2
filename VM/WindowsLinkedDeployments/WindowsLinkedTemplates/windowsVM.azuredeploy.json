@@ -1,0 +1,328 @@
+{
+    "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+        "deploymentEnvironmentName": {
+            "type": "string"
+        },
+        "assignedDataDisks": {
+            "type":"object"
+        },
+        "windowsVMImage":{
+            "type": "string",
+            "metadata": {
+                "description": "ResoruceID of the VM Image"
+            }
+        },
+        "OSVersion": {
+            "type": "string"
+        },
+        "imagePublisher":{
+            "type": "string"
+        },
+        "imageOffer":{
+            "type": "string"
+        },
+        "adminUsername": {
+            "type": "string",
+            "metadata": {
+                "description": "Admin username for VM"
+                }
+        },
+        "adminPassword": {
+            "type": "securestring",
+            "metadata": {
+                "description": "Admin password for VMs"
+                }
+        },
+        "vmName": {
+            "type": "string",
+            "metadata": {
+                "description": "Case sensitive virtual machine name"
+            }
+        },
+        "vmSize":{
+            "type": "string"
+        },
+        "virtualNetworkResourceGroup": {
+            "type": "string",
+            "metadata": {
+                "description": "Name of the virtual network resource group."
+            }
+        },
+        "vNetName": {
+            "type":"string",
+            "metadata": {
+                "description": "Name of the virtual network to deploy the VM to"
+            }
+        },
+        "vNetSubnetName":{
+            "type": "string",
+            "metadata": {
+                "description": "Name of the virtual network subnet used in the deployment of the VM"
+            }
+        },
+        "bootDiagnostics":{
+            "type": "bool",
+            "defaultValue": true,
+            "metadata": {
+                "description": "Enable Boot Diagnostics."
+                }
+        },
+        "diagnosticLogStorageAccountName": {
+            "type": "string",
+            "metadata": {
+                "description": "Name of diagnostic log storage account."
+                }
+        },
+        "diagnosticLogStorageResourceGroup": {
+            "type": "string",
+            "metadata": {
+                "description": "Diagnostic storage account resource group."
+            }
+        },
+        "azureLogAnalyticsSubscriptionID": {
+            "type":"string",
+            "metadata": {
+                "description": "SubscriptionId for Diagnostic and log analytic storage accounts"
+            }
+        },
+        "azureLogAnalyticsResourceGroup": {
+            "type":"string",
+            "metadata": {
+                "description": "Log analytics reserouce group"
+            }
+        },
+        "azureLogAnalyticsWorkspaceID": {
+            "type":"string",
+            "metadata": {
+                "description": "Log analytics workspace ID"
+            }
+        },
+        "tags": {
+			"type": "object",
+			"defaultValue": {
+			},
+			"metadata": {
+				"description": "Optional. Tags of the storage account resource."
+			}
+		},
+        "vaultName":{
+            "type": "string"
+        },
+        "backupVaultResourceGroup":{
+            "type": "string"
+        },
+        "backupPolicyName":{
+            "type": "string"
+        }
+    },
+    "variables": {
+        "vnetID": "[resourceId(parameters('virtualNetworkResourceGroup'), 'Microsoft.Network/virtualNetworks', parameters('vNetName'))]",
+        "subnet1Ref": "[concat(variables('vnetID'),'/subnets/', parameters('vNetSubnetName'))]",
+        "wadlogs": "<WadCfg> <DiagnosticMonitorConfiguration overallQuotaInMB=\"4096\" xmlns=\"http://schemas.microsoft.com/ServiceHosting/2010/10/DiagnosticsConfiguration\"> <DiagnosticInfrastructureLogs scheduledTransferLogLevelFilter=\"Error\"/> <WindowsEventLog scheduledTransferPeriod=\"PT1M\" > <DataSource name=\"Application!*[System[(Level = 1 or Level = 2 or Level = 3 or Level = 4 or Level = 5)]]\" /> <DataSource name=\"Security!*[System[(Level = 1 or Level = 2)]]\" /> <DataSource name=\"System!*[System[(Level = 1 or Level = 2 or Level = 3 or Level = 4) or Level = 5]]\" /></WindowsEventLog>",
+        "wadperfcounters1": "<PerformanceCounters scheduledTransferPeriod=\"PT1M\"><PerformanceCounterConfiguration counterSpecifier=\"\\Processor(_Total)\\% Processor Time\" sampleRate=\"PT15S\" unit=\"Percent\"><annotation displayName=\"CPU utilization\" locale=\"en-us\"/></PerformanceCounterConfiguration><PerformanceCounterConfiguration counterSpecifier=\"\\Processor(_Total)\\% Privileged Time\" sampleRate=\"PT15S\" unit=\"Percent\"><annotation displayName=\"CPU privileged time\" locale=\"en-us\"/></PerformanceCounterConfiguration><PerformanceCounterConfiguration counterSpecifier=\"\\Processor(_Total)\\% User Time\" sampleRate=\"PT15S\" unit=\"Percent\"><annotation displayName=\"CPU user time\" locale=\"en-us\"/></PerformanceCounterConfiguration><PerformanceCounterConfiguration counterSpecifier=\"\\Processor Information(_Total)\\Processor Frequency\" sampleRate=\"PT15S\" unit=\"Count\"><annotation displayName=\"CPU frequency\" locale=\"en-us\"/></PerformanceCounterConfiguration><PerformanceCounterConfiguration counterSpecifier=\"\\System\\Processes\" sampleRate=\"PT15S\" unit=\"Count\"><annotation displayName=\"Processes\" locale=\"en-us\"/></PerformanceCounterConfiguration><PerformanceCounterConfiguration counterSpecifier=\"\\Process(_Total)\\Thread Count\" sampleRate=\"PT15S\" unit=\"Count\"><annotation displayName=\"Threads\" locale=\"en-us\"/></PerformanceCounterConfiguration><PerformanceCounterConfiguration counterSpecifier=\"\\Process(_Total)\\Handle Count\" sampleRate=\"PT15S\" unit=\"Count\"><annotation displayName=\"Handles\" locale=\"en-us\"/></PerformanceCounterConfiguration><PerformanceCounterConfiguration counterSpecifier=\"\\Memory\\% Committed Bytes In Use\" sampleRate=\"PT15S\" unit=\"Percent\"><annotation displayName=\"Memory usage\" locale=\"en-us\"/></PerformanceCounterConfiguration><PerformanceCounterConfiguration counterSpecifier=\"\\Memory\\Available Bytes\" sampleRate=\"PT15S\" unit=\"Bytes\"><annotation displayName=\"Memory available\" locale=\"en-us\"/></PerformanceCounterConfiguration><PerformanceCounterConfiguration counterSpecifier=\"\\Memory\\Committed Bytes\" sampleRate=\"PT15S\" unit=\"Bytes\"><annotation displayName=\"Memory committed\" locale=\"en-us\"/></PerformanceCounterConfiguration><PerformanceCounterConfiguration counterSpecifier=\"\\Memory\\Commit Limit\" sampleRate=\"PT15S\" unit=\"Bytes\"><annotation displayName=\"Memory commit limit\" locale=\"en-us\"/></PerformanceCounterConfiguration><PerformanceCounterConfiguration counterSpecifier=\"\\PhysicalDisk(_Total)\\% Disk Time\" sampleRate=\"PT15S\" unit=\"Percent\"><annotation displayName=\"Disk active time\" locale=\"en-us\"/></PerformanceCounterConfiguration>",
+        "wadperfcounters2": "<PerformanceCounterConfiguration counterSpecifier=\"\\PhysicalDisk(_Total)\\% Disk Read Time\" sampleRate=\"PT15S\" unit=\"Percent\"><annotation displayName=\"Disk active read time\" locale=\"en-us\"/></PerformanceCounterConfiguration><PerformanceCounterConfiguration counterSpecifier=\"\\PhysicalDisk(_Total)\\% Disk Write Time\" sampleRate=\"PT15S\" unit=\"Percent\"><annotation displayName=\"Disk active write time\" locale=\"en-us\"/></PerformanceCounterConfiguration><PerformanceCounterConfiguration counterSpecifier=\"\\PhysicalDisk(_Total)\\Disk Transfers/sec\" sampleRate=\"PT15S\" unit=\"CountPerSecond\"><annotation displayName=\"Disk operations\" locale=\"en-us\"/></PerformanceCounterConfiguration><PerformanceCounterConfiguration counterSpecifier=\"\\PhysicalDisk(_Total)\\Disk Reads/sec\" sampleRate=\"PT15S\" unit=\"CountPerSecond\"><annotation displayName=\"Disk read operations\" locale=\"en-us\"/></PerformanceCounterConfiguration><PerformanceCounterConfiguration counterSpecifier=\"\\PhysicalDisk(_Total)\\Disk Writes/sec\" sampleRate=\"PT15S\" unit=\"CountPerSecond\"><annotation displayName=\"Disk write operations\" locale=\"en-us\"/></PerformanceCounterConfiguration><PerformanceCounterConfiguration counterSpecifier=\"\\PhysicalDisk(_Total)\\Disk Bytes/sec\" sampleRate=\"PT15S\" unit=\"BytesPerSecond\"><annotation displayName=\"Disk speed\" locale=\"en-us\"/></PerformanceCounterConfiguration><PerformanceCounterConfiguration counterSpecifier=\"\\PhysicalDisk(_Total)\\Disk Read Bytes/sec\" sampleRate=\"PT15S\" unit=\"BytesPerSecond\"><annotation displayName=\"Disk read speed\" locale=\"en-us\"/></PerformanceCounterConfiguration><PerformanceCounterConfiguration counterSpecifier=\"\\PhysicalDisk(_Total)\\Disk Write Bytes/sec\" sampleRate=\"PT15S\" unit=\"BytesPerSecond\"><annotation displayName=\"Disk write speed\" locale=\"en-us\"/></PerformanceCounterConfiguration><PerformanceCounterConfiguration counterSpecifier=\"\\LogicalDisk(_Total)\\% Free Space\" sampleRate=\"PT15S\" unit=\"Percent\"><annotation displayName=\"Disk free space (percentage)\" locale=\"en-us\"/></PerformanceCounterConfiguration></PerformanceCounters>",
+        "wadcfgxstart": "[concat(variables('wadlogs'), variables('wadperfcounters1'), variables('wadperfcounters2'), '<Metrics resourceId=\"')]",
+        "wadmetricsresourceid": "[concat('/subscriptions/', subscription().subscriptionId, '/resourceGroups/', resourceGroup().name , '/providers/', 'Microsoft.Compute/virtualMachines/')]",
+        "wadcfgxend": "\"><MetricAggregation scheduledTransferPeriod=\"PT1H\"/><MetricAggregation scheduledTransferPeriod=\"PT1M\"/></Metrics></DiagnosticMonitorConfiguration></WadCfg>",
+        "accountid": "[concat('/subscriptions/', parameters('azureLogAnalyticsSubscriptionID'), '/resourceGroups/', parameters('diagnosticLogStorageResourceGroup'), '/providers/','Microsoft.Storage/storageAccounts/', parameters('diagnosticLogStorageAccountName'))]",
+        "backupFabric": "Azure",
+        "v2VmType": "Microsoft.Compute/virtualMachines",
+        "v2VmContainer": "iaasvmcontainer;iaasvmcontainerv2;",
+        "v2Vm": "vm;iaasvmcontainerv2;"
+    },
+    "resources": [
+        {
+            "apiVersion": "2018-10-01",
+            "type": "Microsoft.Compute/availabilitySets",
+            "name": "[concat(parameters('vmName'), '-AS')]",
+            "location": "[resourceGroup().location]",
+            "properties": {
+                "platformUpdateDomainCount": 5,
+                "platformFaultDomainCount": 2
+            },
+            "tags": "[parameters('tags')]",
+            "sku": {
+                "name": "Aligned"
+            }
+        },
+        {
+            "apiVersion": "2018-08-01",
+            "type": "Microsoft.Network/networkInterfaces",
+            "name": "[concat(parameters('vmName'), '-VNic1')]",
+            "comments": "This section creates the virtual network interface card (VNic) which will reside in the same resource group as the VM. The VNic will get a private IP Address from the VNet and subnet specified in the parameter file.",
+            "location": "[resourceGroup().location]",
+            "dependsOn": [
+            ],
+            "tags": "[parameters('tags')]",
+            "properties": {
+                "ipConfigurations": [
+                    {
+                        "name": "ipconfig1",
+                        "properties": {
+                            "privateIPAllocationMethod": "Dynamic",
+                            "subnet": {
+                                "id": "[variables('subnet1Ref')]"
+                            }
+                        }
+                    }
+                ]
+            }
+        },
+        {
+            "apiVersion": "2018-10-01",
+            "type": "Microsoft.Compute/virtualMachines",
+            "name": "[parameters('vmName')]",
+            "comments": "",
+            "location": "[resourceGroup().location]",
+            "dependsOn": [
+                "[resourceId('Microsoft.Compute/availabilitySets', concat(parameters('vmName'), '-AS'))]",
+                "[resourceId('Microsoft.Network/networkInterfaces',concat(parameters('vmName'), '-VNic1'))]"
+            ],
+            "tags": "[parameters('tags')]",
+            "properties": {
+                "availabilitySet": {
+                    "id": "[resourceId('Microsoft.Compute/availabilitySets', concat(parameters('vmName'), '-AS'))]"
+                },
+                    "hardwareProfile": {
+                    "vmSize": "[parameters('vmSize')]"
+                },
+                "osProfile": {
+                    "computerName": "[parameters('vmName')]",
+                    "adminUsername": "[parameters('adminUsername')]",
+                    "adminPassword": "[parameters('adminPassword')]",
+                    "windowsConfiguration": {
+                        "enableAutomaticUpdates": false,
+                        "provisionVmAgent": true
+                    },
+                    "allowExtensionOperations": true
+                },
+                "storageProfile": {
+                    "imageReference": {
+                        "publisher": "[parameters('imagePublisher')]",
+                        "offer": "[parameters('imageOffer')]",
+                        "sku": "[parameters('OSVersion')]",
+                        "version": "latest"
+                    },
+                    "osDisk": {
+                        "name":"[concat(parameters('vmName'), '-OS-Disk')]",
+                        "createOption": "FromImage",
+                        "managedDisk": {
+                            "storageAccountType": "StandardSSD_LRS"
+                        }
+                    },
+                    "copy": [
+                        {
+                            "name": "dataDisks",
+                            "count": "[length(parameters('assignedDataDisks').dataDiskList)]",
+                            "input": {
+                                "lun": "[parameters('assignedDataDisks').dataDiskList[copyIndex('dataDisks')].lun]",
+                                "name": "[concat(parameters('vmName'), '-Disk-',parameters('assignedDataDisks').dataDiskList[copyIndex('dataDisks')].lun)]",
+                                "createOption": "Empty",
+                                "caching": "ReadWrite",
+                                "managedDisk": {
+                                    "storageAccountType": "[parameters('assignedDataDisks').dataDiskList[copyIndex('dataDisks')].storageAccountType]"
+                                },
+                                "diskSizeGB": "[parameters('assignedDataDisks').dataDiskList[copyIndex('dataDisks')].diskSizeGB]"
+                            }
+                        }
+                    ]
+                },
+                "networkProfile": {
+                    "networkInterfaces": [
+                        {
+                            "id": "[resourceId('Microsoft.Network/networkInterfaces', concat(parameters('vmName'), '-VNic1'))]"
+                        }
+                    ]
+                },
+                "diagnosticsProfile": {
+                    "bootDiagnostics": {
+                        "enabled": "[parameters('bootDiagnostics')]",
+                        "storageUri":"[concat('https://', parameters('diagnosticLogStorageAccountName'), '.blob.core.windows.net')]"
+                    }
+                }
+            }
+        },
+        {
+            "type": "Microsoft.Compute/virtualMachines/extensions",
+            "name": "[concat(parameters('vmName'), '/Microsoft.EnterpriseCloud.Monitoring')]",
+            "comments": "This is the first virtual machine extension that will be installed. This is the Azure Diagnostic Logs agent and is the location that all of the log files will be written to.",
+            "apiVersion": "2017-03-30",
+            "location": "[resourceGroup().location]",
+            "dependsOn": [
+                "[concat('Microsoft.Compute/virtualMachines/', parameters('vmName'))]"
+            ],
+            "properties": {
+                "publisher": "Microsoft.Azure.Diagnostics",
+                "type": "IaaSDiagnostics",
+                "typeHandlerVersion": "1.5",
+                "autoUpgradeMinorVersion": true,
+                "settings": {
+                    "xmlCfg": "[base64(concat(variables('wadcfgxstart'), variables('wadmetricsresourceid'), parameters('vmName'), variables('wadcfgxend')))]",
+                    "storageAccount": "[parameters('diagnosticLogStorageAccountName')]"
+                },
+                "protectedSettings": {
+                    "storageAccountName" : "[parameters('diagnosticLogStorageAccountName')]",
+                    "storageAccountEndPoint": "https://core.usgovcloudapi.net",
+                    "storageAccountKey": "[listkeys(variables('accountid'), '2015-05-01-preview').key1]"
+                }
+            }
+        },
+        {
+            "type": "Microsoft.Compute/virtualMachines/extensions",
+            "name": "[concat(parameters('vmName'), '/Microsoft.EnterpriseCloud.MonitoringAgent')]",
+            "comments": "This is the second extension that gets installed and is the Azure Monitoring Agent.",
+            "apiVersion": "2015-06-15",
+            "location": "[resourceGroup().location]",
+            "dependsOn": [
+                "[concat('Microsoft.Compute/virtualMachines/', parameters('vmName'))]"
+            ],
+            "properties": {
+                "publisher": "Microsoft.EnterpriseCloud.Monitoring",
+                "type": "MicrosoftMonitoringAgent",
+                "typeHandlerVersion": "1.0",
+                "autoUpgradeMinorVersion": true,
+                "settings": {
+                    "workspaceId": "[reference(resourceId(parameters('azureLogAnalyticsSubscriptionID'), parameters('azureLogAnalyticsResourceGroup'), 'Microsoft.OperationalInsights/workspaces/', parameters('azureLogAnalyticsWorkspaceID')), '2015-11-01-preview').customerId]"
+                },
+                "protectedSettings": {
+                    "workspaceKey": "[listKeys(resourceId(parameters('azureLogAnalyticsSubscriptionID'), parameters('azureLogAnalyticsResourceGroup'),'Microsoft.OperationalInsights/workspaces/', parameters('azureLogAnalyticsWorkspaceID')), '2015-11-01-preview').primarySharedKey]"
+                }
+            }
+        },
+        {
+        "apiVersion": "2017-05-10",
+        "name": "nestedTemplateRecoveryServices",
+        "type": "Microsoft.Resources/deployments",
+        "resourceGroup": "[parameters('backupVaultResourceGroup')]",
+        "dependsOn": ["[concat('Microsoft.Compute/virtualMachines/', parameters('vmName'))]"],
+        "properties": {
+            "mode": "Incremental",
+            "template": {
+                "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+                "contentVersion": "1.0.0.0",
+                "parameters": {},
+                "variables": {},
+                "resources": [
+                        {
+                        "name": "[concat(parameters('vaultName'), '/', variables('backupFabric'), '/', variables('v2VmContainer'), concat(resourceGroup().name,';',parameters('vmName')), '/', variables('v2Vm'), concat(resourceGroup().name,';',parameters('vmName')))]",
+                        "apiVersion": "2016-06-01",
+                        "location": "[resourceGroup().location]",
+                        "type": "Microsoft.RecoveryServices/vaults/backupFabrics/protectionContainers/protectedItems",
+                        "properties": {
+                            "protectedItemType": "[variables('v2VmType')]",
+                            "policyId": "[resourceId('Microsoft.RecoveryServices/vaults/backupPolicies',parameters('vaultName'),parameters('backupPolicyName') )]",
+                            "sourceResourceId": "[resourceId(subscription().subscriptionId, resourceGroup().name,'Microsoft.Compute/virtualMachines',parameters('vmName'))]"
+                            }
+                        }
+                    ]
+                },
+            "parameters": {},
+            "outputs": {}
+        }
+        }
+    ],
+    "outputs": {
+    }
+}

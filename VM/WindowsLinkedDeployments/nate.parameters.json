@@ -1,0 +1,61 @@
+{
+    "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentParameters.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+        "deploymentEnvironmentName": {
+            "value": "central-westus-prod-hub-ad-rg"
+        },
+        "vmName": {
+            "value": "VM-Prd-ad2"
+        },
+        "OSVersion":{
+            "value": "2016-Datacenter-Server-Core"
+        },
+        "assignedDataDisks": {
+            "value": {
+                "dataDiskList": [
+                ]
+            }
+        },
+        "vmSize":{
+            "value": "Standard_D2s_v3"
+        },
+        "imagePublisher": {
+            "value": "MicrosoftWindowsServer"
+        },
+        "imageOffer": {
+            "value": "WindowsServer"
+        },
+        "tags": {
+            "value": {
+                "ApplicationName":"Azure Core Resources",
+                "ContactEmail": "Infra_Apps@pima.gov",
+                "Department": "ITD",
+                "CostCenter":"12345",
+                "OwnerName":"Ken Mayer",
+                "DisasterRecovery": "No",
+                "Environment": "dev",
+                "Tier": "0"
+            }
+        },
+        "bootDiagnostics":{
+            "value": true
+        },
+        "adminPassword": {
+            "reference": {
+            "keyVault": {
+                "id": "/subscriptions/1db25687-69f8-41dc-845f-2958b094e631/resourceGroups/central-westus-prod-kv/providers/Microsoft.KeyVault/vaults/pima-itd-prod-kv"
+                },
+                "secretName": "AdminPassword"
+            }
+        },
+        "_artifactsLocationSasToken": {
+            "reference": {
+            "keyVault": {
+                "id": "/subscriptions/1db25687-69f8-41dc-845f-2958b094e631/resourceGroups/central-westus-prod-kv/providers/Microsoft.KeyVault/vaults/pima-itd-prod-kV"
+                },
+                "secretName": "resourceDeploymentSAS"
+            }
+        }
+    }
+}
